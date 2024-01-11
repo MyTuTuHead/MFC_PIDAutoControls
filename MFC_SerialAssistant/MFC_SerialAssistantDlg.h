@@ -4,10 +4,11 @@
 
 #pragma once
 #include "resource.h"
-#include "SerialPort.h"
 #include "ChartCtrl/ChartCtrl.h"
 #include "ChartCtrl/ChartLineSerie.h"
 #include "ChartCtrl/ChartBarSerie.h"
+#include "Comm.h"
+#include "MyEdit.h"
 
 // CMFCSerialAssistantDlg 对话框
 class CMFCSerialAssistantDlg : public CDialogEx
@@ -38,12 +39,16 @@ protected:
 	afx_msg HCURSOR OnQueryDragIcon();
 	DECLARE_MESSAGE_MAP()
 public:
-	void InitComboBox();
+	void CMFCSerialAssistantDlg::InitSerialPortBaud(int baudControlId);
+	int CMFCSerialAssistantDlg::GetSerialPortIds(std::vector<int>& comIds);
+	void CMFCSerialAssistantDlg::InitSerialPortControl(int comControlId, int baudControlId, CComm* pSerialPort);
 	afx_msg void OnBnClickedBtnCommcontrol();
 	afx_msg void OnBnClickedBtnSend();
 	afx_msg void OnBnClickedButton1();
 
 public:
+	CComm m_SerialPort;
+
 	CChartCtrl m_Pic;
 	CChartAxis* pAxis;
 	CChartLineSerie* pLineSeries;
@@ -52,14 +57,13 @@ public:
 	afx_msg void OnBnClickedButtonStart();
 	afx_msg void OnBnClickedButtonClear();
 
-	int Tim_value;
 	CEdit Tim_val;
 	CEdit m_Edit_Kp;
 	CEdit m_Edit_Ki;
 	CEdit m_Edit_Kd;
 	CEdit m_Edit_Step;
-	float Pid_Step;
 
+	float Pid_Step;
 	float kp;
 	float ki;
 	float kd;
@@ -69,7 +73,6 @@ public:
 	float error_sum;
 	float out;
 
-	int max_cnt;
 	afx_msg void OnBnClickedButtonKpadd();
 	afx_msg void OnBnClickedButtonKpsub();
 	afx_msg void OnBnClickedButtonKiadd();
@@ -77,5 +80,14 @@ public:
 	afx_msg void OnBnClickedButtonKdadd();
 	afx_msg void OnBnClickedButtonKdsub();
 
-	int start_flag;
+	bool RecvEditShowOn;
+
+	CMyEdit m_JZEditRx;
+	CMyEdit m_JZEditTx;
+	afx_msg void OnBnClickedBtShowOnoff();
+
+	CProgressCtrl m_Progress_Show_ONOFF;
+	CProgressCtrl m_Progress_Com_ONOFF;
+	CProgressCtrl m_Progress_Save_ONOFF;
+	afx_msg void OnBnClickedBtSave();
 };

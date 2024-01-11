@@ -6,12 +6,6 @@
 #include "MFC_SerialAssistant.h"
 
 
-
-extern int Pid_Buffer[500];
-int Pid_cnt = 0;
-int Multiple = 1;
-extern int stop_flag;
-
 CThreadComm::CThreadComm()
 {
 }
@@ -65,31 +59,7 @@ void CThreadComm::run()
 		{
 			nLength = 0;
 			memcpy(recvBuf + nLength, recvTemp, dwRead);
-			if (stop_flag == 0) {
-				for (int i = 0; i < comStat.cbInQue; i++) {
-					if (recvBuf[i] == 'e' && i >= 6) {
-						Pid_cnt++;
-						if (Pid_cnt >= 7990 && stop_flag == 0) {
-							//Pid_cnt = 0;
-							stop_flag = 2;
-						}
-						Multiple = 1;
-						for (int j = i - 1; j > i - 6; j--) {
-							if (recvBuf[j] == 'e') {
-								Multiple = 1;
-								break;
-							}
-							else if (recvBuf[j] >= '0' && recvBuf[j] <= '9') {
-								Pid_Buffer[Pid_cnt] += (recvBuf[j] - 0x30) * Multiple;
-								Multiple *= 10;
-							}
-							else {
-								break;
-							}
-						}
-					}
-				}
-			}
+
 			nLength += dwRead;
 		}
 
@@ -104,7 +74,7 @@ void CThreadComm::run()
 			{
 				CString strRecv;
 				pEditRecv->GetWindowText(strRecv);
-				strRecv = strRecv + _T("ÊÕ£º") + recvBuf + _T("\r\n");
+				strRecv = strRecv + _T("Rx£º") + recvBuf + _T("\r\n");
 				pEditRecv->SetWindowText(strRecv);
 			}
 		}

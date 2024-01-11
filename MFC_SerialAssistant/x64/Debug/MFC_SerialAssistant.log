@@ -1,1 +1,27 @@
-﻿
+﻿  MyEdit.cpp
+  MFC_SerialAssistantDlg.cpp
+MFC_SerialAssistantDlg.cpp(119): error C2039: “greater”: 不是“std”的成员
+MFC_SerialAssistantDlg.cpp(119): error C2065: “greater”: 未声明的标识符
+MFC_SerialAssistantDlg.cpp(119): error C2062: 意外的类型“int”
+MFC_SerialAssistantDlg.cpp(262): warning C4305: “=”: 从“double”到“float”截断
+MFC_SerialAssistantDlg.cpp(265): warning C4305: “=”: 从“double”到“float”截断
+MFC_SerialAssistantDlg.cpp(480): warning C4244: “=”: 从“double”转换到“float”，可能丢失数据
+MFC_SerialAssistantDlg.cpp(483): warning C4244: “=”: 从“double”转换到“float”，可能丢失数据
+MFC_SerialAssistantDlg.cpp(486): warning C4244: “=”: 从“double”转换到“float”，可能丢失数据
+MFC_SerialAssistantDlg.cpp(505): warning C4244: “=”: 从“double”转换到“float”，可能丢失数据
+MFC_SerialAssistantDlg.cpp(507): warning C4244: “=”: 从“double”转换到“float”，可能丢失数据
+MFC_SerialAssistantDlg.cpp(521): warning C4244: “=”: 从“double”转换到“float”，可能丢失数据
+MFC_SerialAssistantDlg.cpp(523): warning C4244: “=”: 从“double”转换到“float”，可能丢失数据
+MFC_SerialAssistantDlg.cpp(536): warning C4244: “=”: 从“double”转换到“float”，可能丢失数据
+MFC_SerialAssistantDlg.cpp(538): warning C4244: “=”: 从“double”转换到“float”，可能丢失数据
+MFC_SerialAssistantDlg.cpp(551): warning C4244: “=”: 从“double”转换到“float”，可能丢失数据
+MFC_SerialAssistantDlg.cpp(553): warning C4244: “=”: 从“double”转换到“float”，可能丢失数据
+MFC_SerialAssistantDlg.cpp(566): warning C4244: “=”: 从“double”转换到“float”，可能丢失数据
+MFC_SerialAssistantDlg.cpp(568): warning C4244: “=”: 从“double”转换到“float”，可能丢失数据
+MFC_SerialAssistantDlg.cpp(581): warning C4244: “=”: 从“double”转换到“float”，可能丢失数据
+MFC_SerialAssistantDlg.cpp(583): warning C4244: “=”: 从“double”转换到“float”，可能丢失数据
+MFC_SerialAssistantDlg.cpp(595): warning C4800: “int”: 将值强制为布尔值“true”或“false”(性能警告)
+  正在生成代码...
+  正在编译...
+  MFC_SerialAssistant.cpp
+  正在生成代码...

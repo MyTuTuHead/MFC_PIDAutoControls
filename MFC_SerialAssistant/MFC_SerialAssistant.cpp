@@ -37,8 +37,6 @@ CMFCSerialAssistantApp::CMFCSerialAssistantApp()
 // 唯一的 CMFCSerialAssistantApp 对象
 
 CMFCSerialAssistantApp theApp;
-CSerialPort gSerialPort;
-
 
 // CMFCSerialAssistantApp 初始化
 

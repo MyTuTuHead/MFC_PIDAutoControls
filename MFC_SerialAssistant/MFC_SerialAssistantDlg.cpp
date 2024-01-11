@@ -13,14 +13,6 @@
 #endif
 
 
-int Tim_Cnt = 0;
-
-extern int Pid_cnt;
-int Pid_Buffer[8000];
-int clc_cnt = 0;
-int stop_flag = 0;
-
-
 // 用于应用程序“关于”菜单项的 CAboutDlg 对话框
 
 class CAboutDlg : public CDialogEx
@@ -74,60 +66,108 @@ void CMFCSerialAssistantDlg::DoDataExchange(CDataExchange* pDX)
 	DDX_Control(pDX, IDC_EDIT_KI, m_Edit_Ki);
 	DDX_Control(pDX, IDC_EDIT_Kd, m_Edit_Kd);
 	DDX_Control(pDX, IDC_EDIT_STEP, m_Edit_Step);
+
+	DDX_Control(pDX, IDC_EDIT_RECV, m_JZEditRx);
+	DDX_Control(pDX, IDC_EDIT_SEND, m_JZEditTx);
+
+	DDX_Control(pDX, IDC_PROGRESS_SHOW_ONOFF, m_Progress_Show_ONOFF);
+	DDX_Control(pDX, IDC_PROGRESS_COM_ONOFF, m_Progress_Com_ONOFF);
+	DDX_Control(pDX, IDC_PROGRESS_SAVE_ONOFF, m_Progress_Save_ONOFF);
 }
 
-void CMFCSerialAssistantDlg::InitComboBox()
+int CMFCSerialAssistantDlg::GetSerialPortIds(std::vector<int>& comIds)
 {
-	//串口设置
-	CComboBox* pComboComm = (CComboBox*)GetDlgItem(IDC_COMBO_COMM);
-	ASSERT(pComboComm);
-	for (int i = 1; i <= 8; i++)
+	comIds.clear();
+
+	HKEY hComKey;
+
+	TCHAR keyName[MAX_PATH + 1];
+	BYTE keyVal[1024];
+
+
+	DWORD keySize = sizeof(keyName) / sizeof(TCHAR);
+	DWORD type = REG_SZ;
+	DWORD valLen = sizeof(keyVal);
+
+	memset(keyName, 0, sizeof(keyName));
+	memset(keyVal, 0, sizeof(keyVal));
+
+	::RegOpenKeyEx(HKEY_LOCAL_MACHINE, TEXT("HARDWARE\\DEVICEMAP\\SERIALCOMM"), 0, KEY_READ, &hComKey);
+
+	DWORD index = 0;
+
+	while (::RegEnumValue(hComKey, index, keyName, &keySize, 0, &type, keyVal, &valLen) != ERROR_NO_MORE_ITEMS)
 	{
-		CString strComm;
-		strComm.Format(_T("COM%d"), i);
-		pComboComm->AddString(strComm);
+		int comId = 0;
+		sscanf_s((const char*)&keyVal[3], "%d", &comId);
+		comIds.push_back(comId);
+
+		keySize = sizeof(keyName);
+		type = REG_SZ;
+		valLen = sizeof(keyVal);
+		memset(keyName, 0, sizeof(keyName));
+		memset(keyVal, 0, sizeof(keyVal));
+
+		index++;
+		if (index >= 256)
+		{
+			break;
+		}
 	}
-	pComboComm->SetCurSel(0);//选择默认值
+	::RegCloseKey(hComKey);
 
-	//波特率设置
-	CComboBox* pComboBaudRate = (CComboBox*)GetDlgItem(IDC_COMBO_BAUDRATE);
-	ASSERT(pComboBaudRate);
-	//pComboBaudRate->SetItemData(pComboBaudRate->AddString(_T("300")), 300);
-	//pComboBaudRate->SetItemData(pComboBaudRate->AddString(_T("600")), 600);
-	//pComboBaudRate->SetItemData(pComboBaudRate->AddString(_T("1200")), 1200);
-	//pComboBaudRate->SetItemData(pComboBaudRate->AddString(_T("2400")), 2400);
-	pComboBaudRate->SetItemData(pComboBaudRate->AddString(_T("4800")), 4800);
-	pComboBaudRate->SetItemData(pComboBaudRate->AddString(_T("9600")), 9600);
-	pComboBaudRate->SetItemData(pComboBaudRate->AddString(_T("19200")), 19200);
-	pComboBaudRate->SetItemData(pComboBaudRate->AddString(_T("38400")), 38400);
-	pComboBaudRate->SetItemData(pComboBaudRate->AddString(_T("43000")), 43000);
-	pComboBaudRate->SetItemData(pComboBaudRate->AddString(_T("56000")), 56000);
-	pComboBaudRate->SetItemData(pComboBaudRate->AddString(_T("57600")), 57600);
-	pComboBaudRate->SetItemData(pComboBaudRate->AddString(_T("115200")), 115200);
-	pComboBaudRate->SetCurSel(1);//默认选择9600
+	std::sort(comIds.begin(), comIds.end(), std::greater<int>());
 
-	//奇偶校验位设置
-	CComboBox* pComboCheckBit = (CComboBox*)GetDlgItem(IDC_COMBO_CHECKBIT);
-	ASSERT(pComboCheckBit);
-	pComboCheckBit->SetItemData(pComboCheckBit->AddString(_T("无NULL")), NOPARITY);//no parity
-	pComboCheckBit->SetItemData(pComboCheckBit->AddString(_T("奇ODD")), ODDPARITY);//odd parity
-	pComboCheckBit->SetItemData(pComboCheckBit->AddString(_T("偶EVEN")), EVENPARITY);//even parity
-	pComboCheckBit->SetCurSel(0);//选择默认值
+	return (int)comIds.size();
+}
 
-	//数据位设置
-	CComboBox* pComboDataBit = (CComboBox*)GetDlgItem(IDC_COMBO_DATABIT);
-	ASSERT(pComboDataBit);
-	pComboDataBit->SetItemData(pComboDataBit->AddString(_T("6")), 6);
-	pComboDataBit->SetItemData(pComboDataBit->AddString(_T("7")), 7);
-	pComboDataBit->SetItemData(pComboDataBit->AddString(_T("8")), 8);
-	pComboDataBit->SetCurSel(2);//选择默认值
+void CMFCSerialAssistantDlg::InitSerialPortBaud(int baudControlId)
+{
+	CComboBox* pComboBox = (CComboBox*)GetDlgItem(baudControlId);
+	CString cs;
 
-	//停止位设置
-	CComboBox* pComboStopBit = (CComboBox*)GetDlgItem(IDC_COMBO_STOPBIT);
-	ASSERT(pComboStopBit);
-	pComboStopBit->SetItemData(pComboStopBit->AddString(_T("1")), ONESTOPBIT);
-	pComboStopBit->SetItemData(pComboStopBit->AddString(_T("2")), TWOSTOPBITS);
-	pComboStopBit->SetCurSel(0);//选择默认值
+	int bauds[] = { 1200, 2400, 4800, 9600, 19200, 38400, 57600, 115200, 230400, 460800,614400, 921600 };
+	for (int i = 0; i < sizeof(bauds) / sizeof(int); ++i)
+	{
+		cs.Format(_T("%d"), bauds[i]);
+		pComboBox->InsertString(i, cs);
+	}
+	pComboBox->SetCurSel(7);//初始化波特率
+}
+
+void CMFCSerialAssistantDlg::InitSerialPortControl(int comControlId, int baudControlId, CComm* pSerialPort)
+{
+	CComboBox* pComboBox = (CComboBox*)GetDlgItem(comControlId);
+	static std::vector<int> comIds;
+	if (comIds.size() == 0)
+	{
+		GetSerialPortIds(comIds);
+	}
+	CString cs;
+	for (size_t i = 0; i < comIds.size(); i++)
+	{
+		cs.Format(_T("COM%d"), comIds[i]);
+		pComboBox->InsertString(0, cs);//初始化串口号			
+	}
+	pComboBox->SetCurSel(0);
+
+	pComboBox = (CComboBox*)GetDlgItem(baudControlId);
+	int bauds[] = { 110, 300, 1200, 2400, 4800, 9600, 19200, 38400, 57600, 115200, 230400, 460800,614400, 921600 };
+	for (int i = 0; i < sizeof(bauds) / sizeof(int); ++i)
+	{
+		cs.Format(_T("%d"), bauds[i]);
+		pComboBox->InsertString(i, cs);
+	}
+	pComboBox->SetCurSel(9);//初始化波特率
+
+	pComboBox = (CComboBox*)GetDlgItem(IDC_COMBO_CHECKBIT);
+	pComboBox->SetCurSel(0);
+	pComboBox = (CComboBox*)GetDlgItem(IDC_COMBO_DATABIT);
+	pComboBox->SetCurSel(2);
+	pComboBox = (CComboBox*)GetDlgItem(IDC_COMBO_STOPBIT);
+	pComboBox->SetCurSel(0);
+
+	//pSerialPort->SetWnd(this->m_hWnd);//设置串口消息处理窗口
 }
 
 
@@ -147,6 +187,8 @@ BEGIN_MESSAGE_MAP(CMFCSerialAssistantDlg, CDialogEx)
 	ON_BN_CLICKED(IDC_BUTTON_KISUB, &CMFCSerialAssistantDlg::OnBnClickedButtonKisub)
 	ON_BN_CLICKED(IDC_BUTTON_KDADD, &CMFCSerialAssistantDlg::OnBnClickedButtonKdadd)
 	ON_BN_CLICKED(IDC_BUTTON_KDSUB, &CMFCSerialAssistantDlg::OnBnClickedButtonKdsub)
+	ON_BN_CLICKED(IDC_BT_SHOW_ONOFF, &CMFCSerialAssistantDlg::OnBnClickedBtShowOnoff)
+	ON_BN_CLICKED(IDC_BT_SAVE, &CMFCSerialAssistantDlg::OnBnClickedBtSave)
 END_MESSAGE_MAP()
 
 
@@ -181,10 +223,10 @@ BOOL CMFCSerialAssistantDlg::OnInitDialog()
 	SetIcon(m_hIcon, TRUE);			// 设置大图标
 	SetIcon(m_hIcon, FALSE);		// 设置小图标
 
-	// TODO: 在此添加额外的初始化代码
-	InitComboBox();
-	
-	memset(Pid_Buffer, 0, sizeof(Pid_Buffer));
+	// TODO: 在此添加额外的初始化代码	
+	//InitSerialPortBaud(IDC_COMBO_BAUDRATE);
+	InitSerialPortControl(IDC_COMBO_COMM,IDC_COMBO_BAUDRATE,&m_SerialPort);
+
 
 	m_Pic.SetBackColor(RGB(0, 0, 0));
 	//m_Pic.ShowMouseCursor(1);
@@ -212,16 +254,9 @@ BOOL CMFCSerialAssistantDlg::OnInitDialog()
 	pLineSeries_clc->SetColor(RGB(255, 128, 0));
 	pLineSeries_clc->SetSeriesOrdering(poXOrdering);//设置无序
 
-	Tim_value = 1;
-	Tim_val.SetWindowTextW(_T("1"));
-
-	for (int i = 7000; i > 0; i--) {
-		Pid_Buffer[7000-i] = i;
-	}
+	Tim_val.SetWindowTextA("10");
 
 	CString str;
-
-	start_flag = 0;
 
 	kp = 70;
 	ki = 0.35;
@@ -229,22 +264,32 @@ BOOL CMFCSerialAssistantDlg::OnInitDialog()
 	error_sum = 0.0;
 	Pid_Step = 0.001;
 	str.Format(_T("%.4f"), kp);
-	GetDlgItem(IDC_EDIT_KP)->SetWindowTextW(str);
+	GetDlgItem(IDC_EDIT_KP)->SetWindowTextA(str);
 	str.Format(_T("%.4f"), ki);
-	GetDlgItem(IDC_EDIT_KI)->SetWindowTextW(str);
+	GetDlgItem(IDC_EDIT_KI)->SetWindowTextA(str);
 	str.Format(_T("%.4f"), kd);
-	GetDlgItem(IDC_EDIT_Kd)->SetWindowTextW(str);
+	GetDlgItem(IDC_EDIT_Kd)->SetWindowTextA(str);
 	str.Format(_T("%.4f"), Pid_Step);
-	GetDlgItem(IDC_EDIT_STEP)->SetWindowTextW(str);
+	GetDlgItem(IDC_EDIT_STEP)->SetWindowTextA(str);
 
-	max_cnt = 7990;
-	Pid_cnt = 0;//调试用,发布注释
+	RecvEditShowOn = 1;//1 开启显示
 
-	str.Format(_T("%d"), max_cnt);
-	GetDlgItem(IDC_EDIT_DATACNT)->SetWindowTextW(str);
+	m_Progress_Show_ONOFF.SetRange(0,1);
+	m_Progress_Show_ONOFF.SetStep(1);
+	m_Progress_Show_ONOFF.SetBarColor((COLORREF)0x0000FF00);
+	m_Progress_Show_ONOFF.SetPos(RecvEditShowOn);
 
-	SetTimer(1, 500, NULL);
+	m_Progress_Com_ONOFF.SetRange(0, 1);
+	m_Progress_Com_ONOFF.SetStep(1);
+	m_Progress_Com_ONOFF.SetBarColor((COLORREF)0x000000FF);
+	m_Progress_Com_ONOFF.SetPos(2);
 
+	m_Progress_Save_ONOFF.SetRange(0, 1);
+	m_Progress_Save_ONOFF.SetStep(1);
+	m_Progress_Save_ONOFF.SetBarColor((COLORREF)0x000000FF);
+	m_Progress_Save_ONOFF.SetPos(1);
+
+	GetDlgItem(IDC_BTN_SEND)->EnableWindow(false);
 	return TRUE;  // 除非将焦点设置到控件，否则返回 TRUE
 }
 
@@ -302,89 +347,49 @@ HCURSOR CMFCSerialAssistantDlg::OnQueryDragIcon()
 void CMFCSerialAssistantDlg::OnBnClickedBtnCommcontrol()
 {
 	// TODO: 在此添加控件通知处理程序代码
-	static BOOL bIsOpen = FALSE;
-	CButton* pBtnCommControl = (CButton*)GetDlgItem(IDC_BTN_COMMCONTROL); 
-	ASSERT(pBtnCommControl);
+	int commId = 1;
+	int baud = 115200;
+	int databit = 8;
+	int parity = 0;
+	int stopbits = 0;
+	CString str;
 
-	CComboBox* pComboBoxComm = (CComboBox*)GetDlgItem(IDC_COMBO_COMM);
-	ASSERT(pComboBoxComm);
-	int nSel = pComboBoxComm->GetCurSel();
-	CString strComm;
-	pComboBoxComm->GetLBText(nSel, strComm);
+	GetDlgItem(IDC_COMBO_COMM)->GetWindowText(str);
+	sscanf_s(str,"COM%d", &commId);
 
-	CComboBox* pComboBoxBaudrate = (CComboBox*)GetDlgItem(IDC_COMBO_BAUDRATE);
-	ASSERT(pComboBoxBaudrate);
-	nSel = pComboBoxBaudrate->GetCurSel();
-	DWORD dwBaudrate = (DWORD)pComboBoxBaudrate->GetItemData(nSel);
+	GetDlgItem(IDC_COMBO_BAUDRATE)->GetWindowText(str);
+	sscanf_s(str, "%d", &baud);
 
-	CComboBox* pComboBoxCheckbit = (CComboBox*)GetDlgItem(IDC_COMBO_CHECKBIT);
-	ASSERT(pComboBoxCheckbit);
-	nSel = pComboBoxCheckbit->GetCurSel();
-	BYTE byParity = (BYTE)pComboBoxCheckbit->GetItemData(nSel);
+	CComboBox* pComboBox = (CComboBox*)GetDlgItem(IDC_COMBO_CHECKBIT);
+	parity = pComboBox->GetCurSel();
 
-	CComboBox* pComboBoxDatabit = (CComboBox*)GetDlgItem(IDC_COMBO_DATABIT);
-	ASSERT(pComboBoxDatabit);
-	nSel = pComboBoxDatabit->GetCurSel();
-	BYTE byDataSize = (BYTE)pComboBoxDatabit->GetItemData(nSel);
+	GetDlgItem(IDC_COMBO_DATABIT)->GetWindowText(str);
+	sscanf_s(str, "%d Bit", &databit);
 
-	CComboBox* pComboBoxStopbit = (CComboBox*)GetDlgItem(IDC_COMBO_STOPBIT);
-	ASSERT(pComboBoxStopbit);
-	nSel = pComboBoxStopbit->GetCurSel();
-	BYTE byStopBits = (BYTE)pComboBoxStopbit->GetItemData(nSel);
+	pComboBox = (CComboBox*)GetDlgItem(IDC_COMBO_STOPBIT);
+	stopbits = pComboBox->GetCurSel();
 
-	if (!bIsOpen)
+	if (m_SerialPort.IsOpened())
 	{
-		bIsOpen = gSerialPort.OpenComm(strComm);
-		if (bIsOpen)
-		{
-			BOOL bRet = gSerialPort.SetCommState(dwBaudrate, byParity, byDataSize, byStopBits);
-			if (!bRet)
-			{
-				gSerialPort.CloseComm();
-				AfxMessageBox(_T("设置串口属性失败！"));
-				return;
-			}
-
-			bRet = gSerialPort.SetupComm(1024, 1024);
-			if (!bRet)
-			{
-				gSerialPort.CloseComm();
-				AfxMessageBox(_T("设置串口输入输出缓冲区失败！"));
-				return;
-			}
-
-			bRet = gSerialPort.PurgeComm(PURGE_RXABORT | PURGE_RXABORT | PURGE_TXCLEAR | PURGE_RXCLEAR);
-			//purge_rxabort | purge_rxabort | purge_txclear | purge_rxclear
-			if (!bRet)
-			{
-				gSerialPort.CloseComm();
-				AfxMessageBox(_T("无法清除串口的错误状态！"));
-				return;
-			}
-
-			bRet = gSerialPort.SetCommMask(EV_RXCHAR);//ev_rxchar
-			if (!bRet)
-			{
-				gSerialPort.CloseComm();
-				AfxMessageBox(_T("设置串口时间出错！"));
-				return;
-			}
-
-			gSerialPort.StartComm();
-
-			bIsOpen = TRUE;
-			pBtnCommControl->SetWindowText(_T("关闭串口"));
-		}
-		else
-		{
-			pBtnCommControl->SetWindowText(_T("打开串口"));
-		}
+		m_SerialPort.Destroy();
+		GetDlgItem(IDC_BTN_SEND)->EnableWindow(false);
+		GetDlgItem(IDC_BTN_COMMCONTROL)->SetWindowText(_T("打开串口"));
+		m_Progress_Com_ONOFF.SetBarColor((COLORREF)0x000000FF);
 	}
 	else
 	{
-		gSerialPort.CloseComm();
-		bIsOpen = FALSE;
-		pBtnCommControl->SetWindowText(_T("打开串口"));
+		if (m_SerialPort.Create(commId, baud, databit, parity, stopbits))
+		{
+			GetDlgItem(IDC_BTN_SEND)->EnableWindow(true);
+			GetDlgItem(IDC_BTN_COMMCONTROL)->SetWindowText(_T("关闭串口"));
+			m_Progress_Com_ONOFF.SetBarColor((COLORREF)0x0000FF00);
+			::Sleep(200);
+		}
+		else
+		{
+			MessageBox(_T("串口打开错误！"));
+			m_Progress_Com_ONOFF.SetBarColor((COLORREF)0x000000FF);
+		}
 	}
 }
 
@@ -392,42 +397,19 @@ void CMFCSerialAssistantDlg::OnBnClickedBtnCommcontrol()
 void CMFCSerialAssistantDlg::OnBnClickedBtnSend()
 {
 	// TODO: 在此添加控件通知处理程序代码
-	if (NULL == gSerialPort.m_hComm)
-	{
-		AfxMessageBox(_T("请打开串口后发送数据！"));
-		return;
-	}
-	CEdit* pEditSend = (CEdit*)GetDlgItem(IDC_EDIT_SEND);
-	ASSERT(pEditSend);
-	CEdit* pEditRecv = (CEdit*)GetDlgItem(IDC_EDIT_RECV);
-	ASSERT(pEditRecv);
-
-	CString strSend;
-	CString strRecv;
-	pEditSend->GetWindowText(strSend);
-	strSend = strSend.Trim();//去掉空格等修饰
-	if (strSend.IsEmpty())
-	{
+	if (!m_SerialPort.IsOpened()) {
 		return;
 	}
 
-	OVERLAPPED overlappedWrite;
-	ZeroMemory(&overlappedWrite, sizeof(OVERLAPPED));
-	overlappedWrite.hEvent = CreateEvent(NULL, TRUE, FALSE, NULL);
+	char* pch = NULL;
+	int len = m_JZEditTx.GetData(&pch);
 
-	int nLen = (strSend.GetLength() + 1) * sizeof(TCHAR);
-	DWORD dwWrite = 0;
-	gSerialPort.WriteFile((TCHAR*)strSend.GetBuffer(), nLen, &dwWrite, &overlappedWrite);
-
-	//pEditSend->SetWindowText(_T(""));
-
-	pEditRecv->GetWindowText(strRecv);
-	strRecv = strRecv+ _T("发：")+strSend + _T("\r\n");
-	pEditRecv->SetWindowText(strRecv);
-
-
-	CloseHandle(overlappedWrite.hEvent);
-	Sleep(100);
+	if (pch)
+	{
+		for (int i = 0; i < len; i += 100)
+			m_SerialPort.SendData(pch + i, (i + 100 <= len) ? 100 : (len - i));
+		delete[]pch;
+	}
 }
 
 
@@ -448,56 +430,42 @@ void CMFCSerialAssistantDlg::OnTimer(UINT_PTR nIDEvent)
 	// TODO: 在此添加消息处理程序代码和/或调用默认值
 	CString str;
 	CDialogEx::OnTimer(nIDEvent);
-	int avg = 0;
-	long sum = 0;
+
+	int len = 0;
+	char data[1024];
+	memset(data, 0, sizeof(1024));
 
 	if (nIDEvent == 1) {
-		Tim_Cnt++;
-		if (stop_flag == 0) {
-			str.Format(_T("%d"), Pid_cnt);
-			if (stop_flag == 2) {
-				str.Format(_T("Max->%d"),Pid_cnt);
+		if (m_SerialPort.IsOpened())
+		{
+			len = m_SerialPort.m_dataBuff.GetQueLen();
+			if (len > 1024)
+			{
+				len = 1024;
 			}
-			GetDlgItem(IDC_EDIT_RECV_CNT)->SetWindowTextW(str);
-		}
-		if (clc_cnt >= max_cnt || clc_cnt >= Pid_cnt) {
-			clc_cnt = 0;
-			start_flag = 0;
-			Pid_cnt = 0;
-			stop_flag = 0;
-			SetTimer(1, 500, NULL);
-			GetDlgItem(IDC_BUTTON_START)->SetWindowTextW(_T("开始分析"));
-		}
-			if (start_flag == 1) {
-				//Tim_Cnt = 0;
-				clc_cnt++;
-				//for (int i = clc_cnt; i < clc_cnt + 50; i++) {
-				//	//sum += Pid_Buffer[i];
-				//	sum += out;
-				//}
-				//avg = sum / 50;
+			m_SerialPort.m_dataBuff.OutQueue(data, len);
 
-				////m_Pic.GetLeftAxis()->SetMinMax(avg-300, avg + 300);
-
-				//if (clc_cnt < 300) {
-				//	m_Pic.GetBottomAxis()->SetMinMax(0, 300);
-				//}
-				//else {
-				//	m_Pic.GetBottomAxis()->SetMinMax(clc_cnt - 150, clc_cnt+150);
-				//}
-				pLineSeries->AddPoint(clc_cnt, Pid_Buffer[clc_cnt]);
-
-				error = Pid_Buffer[clc_cnt];
-				error_sum += error;
-				error_sum = error_sum > 6000 ? 6000 : error_sum;
-
-				out = kp * error + ki * error_sum + kd * ((error-last_error) - (before_last - last_error));
-
-				before_last = last_error;
-				last_error = error;
-
-				pLineSeries_clc->AddPoint(clc_cnt, out);
+			if (len && RecvEditShowOn) {
+				m_JZEditRx.AppendData(data, len);
 			}
+
+			if (len) {
+	/*			if (.m_hFile != INVALID_HANDLE_VALUE)
+					.Write(data, len);*/
+			}
+		}
+	/*	pLineSeries->AddPoint(clc_cnt, Pid_Buffer[clc_cnt]);
+
+		error = Pid_Buffer[clc_cnt];
+		error_sum += error;
+		error_sum = error_sum > 6000 ? 6000 : error_sum;
+
+		out = kp * error + ki * error_sum + kd * ((error-last_error) - (before_last - last_error));
+
+		before_last = last_error;
+		last_error = error;
+
+		pLineSeries_clc->AddPoint(clc_cnt, out);*/
 			
 	}
 }
@@ -507,10 +475,6 @@ void CMFCSerialAssistantDlg::OnBnClickedButtonStart()
 {
 	// TODO: 在此添加控件通知处理程序代码
 	CString temp;
-	Tim_val.GetWindowText(temp);
-	Tim_value = _ttoi(temp);
-	GetDlgItem(IDC_EDIT_DATACNT)->GetWindowText(temp);
-	max_cnt = _ttoi(temp);
 
 	m_Edit_Kp.GetWindowText(temp);
 	kp = _ttof(temp);
@@ -521,41 +485,6 @@ void CMFCSerialAssistantDlg::OnBnClickedButtonStart()
 	m_Edit_Kp.GetWindowText(temp);
 	kd = _ttof(temp);
 
-	//sscanf_s(temp, "%d", &Tim_value);
-
-	
-	Tim_Cnt = 0;
-	clc_cnt = 0;
-
-	start_flag = 1 - start_flag;
-
-	//int avg = 0;
-	//long sum = 0;
-	//int p = max_cnt > Pid_cnt ? Pid_cnt : max_cnt;
-	//for (int i = 0; i < p; i++) {
-	//	sum += Pid_Buffer[i];
-	//	//sum += out;
-	//}
-	//avg = sum / 50;
-
-	//m_Pic.GetLeftAxis()->SetMinMax(avg - 6000,avg + 6000);
-
-	if (start_flag == 1) {
-		if (Pid_cnt == 0) {
-			MessageBox(_T("数据量为0！无法分析！"));
-			return;
-		}
-		pLineSeries->ClearSerie();
-		pLineSeries_clc->ClearSerie();
-		GetDlgItem(IDC_BUTTON_START)->SetWindowTextW(_T("结束分析"));
-		SetTimer(1, Tim_value, NULL);
-	}
-	else {
-		Pid_cnt = 0;
-		stop_flag = 0;
-		GetDlgItem(IDC_BUTTON_START)->SetWindowTextW(_T("开始分析"));
-		SetTimer(1, 500, NULL);
-	}
 }
 
 
@@ -656,4 +585,33 @@ void CMFCSerialAssistantDlg::OnBnClickedButtonKdsub()
 	kd -= Pid_Step;
 	temp.Format(_T("%.4f"), kd);
 	GetDlgItem(IDC_EDIT_Kd)->SetWindowText(temp);
+}
+
+
+void CMFCSerialAssistantDlg::OnBnClickedBtShowOnoff()
+{
+	// TODO: 在此添加控件通知处理程序代码
+
+	RecvEditShowOn = 1 - RecvEditShowOn;
+
+	if (RecvEditShowOn == 1)
+	{
+		GetDlgItem(IDC_BT_SHOW_ONOFF)->SetWindowText(_T("停止显示"));
+		m_Progress_Show_ONOFF.SetBarColor((COLORREF)0x0000FF00);
+		//m_Progress_Show_ONOFF.SetPos(RecvEditShowOn);
+	}
+	else 
+	{
+		GetDlgItem(IDC_BT_SHOW_ONOFF)->SetWindowText(_T("继续显示"));
+		m_Progress_Show_ONOFF.SetBarColor((COLORREF)0x000000FF);
+		//m_Progress_Show_ONOFF.SetPos(RecvEditShowOn);
+	}
+}
+
+
+void CMFCSerialAssistantDlg::OnBnClickedBtSave()
+{
+	// TODO: 在此添加控件通知处理程序代码
+
+	m_Progress_Save_ONOFF.SetBarColor((COLORREF)0x000000FF);
 }

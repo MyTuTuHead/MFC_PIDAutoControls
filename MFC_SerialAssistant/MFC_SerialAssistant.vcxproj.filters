@@ -33,15 +33,6 @@
     <ClInclude Include="pch.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="SerialPort.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="Thread.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="ThreadComm.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
     <ClInclude Include="ChartCtrl\ChartSerie.h">
       <Filter>头文件</Filter>
     </ClInclude>
@@ -135,6 +126,15 @@
     <ClInclude Include="ChartCtrl\ChartStandardAxis.h">
       <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="Comm.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="cycqueue.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="MyEdit.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="MFC_SerialAssistant.cpp">
@@ -144,15 +144,6 @@
       <Filter>源文件</Filter>
     </ClCompile>
     <ClCompile Include="pch.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="SerialPort.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="Thread.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="ThreadComm.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
     <ClCompile Include="ChartCtrl\ChartTitle.cpp">
@@ -222,6 +213,12 @@
       <Filter>源文件</Filter>
     </ClCompile>
     <ClCompile Include="ChartCtrl\ChartAxis.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="Comm.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="MyEdit.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>
