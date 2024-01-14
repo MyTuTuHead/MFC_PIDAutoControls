@@ -189,6 +189,7 @@ BEGIN_MESSAGE_MAP(CMFCSerialAssistantDlg, CDialogEx)
 	ON_BN_CLICKED(IDC_BUTTON_KDSUB, &CMFCSerialAssistantDlg::OnBnClickedButtonKdsub)
 	ON_BN_CLICKED(IDC_BT_SHOW_ONOFF, &CMFCSerialAssistantDlg::OnBnClickedBtShowOnoff)
 	ON_BN_CLICKED(IDC_BT_SAVE, &CMFCSerialAssistantDlg::OnBnClickedBtSave)
+	ON_BN_CLICKED(IDC_BT_SELECT_SAVEPATH, &CMFCSerialAssistantDlg::OnBnClickedBtSelectSavepath)
 END_MESSAGE_MAP()
 
 
@@ -290,6 +291,8 @@ BOOL CMFCSerialAssistantDlg::OnInitDialog()
 	m_Progress_Save_ONOFF.SetPos(1);
 
 	GetDlgItem(IDC_BTN_SEND)->EnableWindow(false);
+
+	m_JzFileSaveBT_Flag = 0;
 	return TRUE;  // 除非将焦点设置到控件，否则返回 TRUE
 }
 
@@ -449,9 +452,9 @@ void CMFCSerialAssistantDlg::OnTimer(UINT_PTR nIDEvent)
 				m_JZEditRx.AppendData(data, len);
 			}
 
-			if (len) {
-	/*			if (.m_hFile != INVALID_HANDLE_VALUE)
-					.Write(data, len);*/
+			if (len && m_JzFilePath) {
+				if (m_cJzFile.m_hFile != INVALID_HANDLE_VALUE)
+					m_cJzFile.Write(data, len);
 			}
 		}
 	/*	pLineSeries->AddPoint(clc_cnt, Pid_Buffer[clc_cnt]);
@@ -612,6 +615,55 @@ void CMFCSerialAssistantDlg::OnBnClickedBtShowOnoff()
 void CMFCSerialAssistantDlg::OnBnClickedBtSave()
 {
 	// TODO: 在此添加控件通知处理程序代码
+	//CTime time;
+	CString strTemp;
 
-	m_Progress_Save_ONOFF.SetBarColor((COLORREF)0x000000FF);
+	m_JzFileSaveBT_Flag = 1 - m_JzFileSaveBT_Flag;
+	if (m_JzFileSaveBT_Flag)
+	{
+		//time = CTime::GetCurrentTime();
+		//strTemp.Format(_T("_%04d%02d%02d%02d%02d%02d.dat"), time.GetYear(), time.GetMonth(), time.GetDay(), time.GetHour(), time.GetMinute(), time.GetSecond());
+		//strTemp = m_JzFilePath + strTemp;
+		GetDlgItem(IDC_EDIT_SAVEPATH)->GetWindowText(m_JzFilePath);
+		if (!m_cJzFile.Open(m_JzFilePath, CFile::modeCreate | CFile::modeWrite))
+		{
+			MessageBox(_T("文件打开失败!"));
+		}
+		else{
+			GetDlgItem(IDC_BT_SAVE)->SetWindowText(_T("停止保存"));
+			GetDlgItem(IDC_EDIT_SAVEPATH)->EnableWindow(false);
+			GetDlgItem(IDC_BT_SELECT_SAVEPATH)->EnableWindow(false);
+			m_Progress_Save_ONOFF.SetBarColor((COLORREF)0x000FF00);
+		}
+	}
+	else {
+		m_cJzFile.Close();
+		GetDlgItem(IDC_BT_SAVE)->SetWindowText(_T("开始保存"));
+		GetDlgItem(IDC_EDIT_SAVEPATH)->EnableWindow(true);
+		GetDlgItem(IDC_BT_SELECT_SAVEPATH)->EnableWindow(true);
+		m_Progress_Save_ONOFF.SetBarColor((COLORREF)0x000000FF);
+	}
+}
+
+
+void CMFCSerialAssistantDlg::OnBnClickedBtSelectSavepath()
+{
+	// TODO: 在此添加控件通知处理程序代码
+	CFileDialog fileDlg(false, "dat", "Data", OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT, "All Files (*.*)|*.*|");
+	if (IDOK == fileDlg.DoModal())
+	{
+		m_JzFilePath = fileDlg.GetPathName();
+		GetDlgItem(IDC_EDIT_SAVEPATH)->SetWindowText(m_JzFilePath);
+	}
+
+	//CString strTemp;
+	//CTime time = CTime::GetCurrentTime();
+	//strTemp.Format(_T("Data_%04d%02d%02d%02d%02d%02d\\"), time.GetYear(), time.GetMonth(), time.GetDay(), time.GetHour(), time.GetMinute(), time.GetSecond());
+	//path = path + strTemp;
+
+	//if (!PathIsDirectory(path)) {
+	//	CreateDirectory(path, NULL);
+	//}
+
+
 }

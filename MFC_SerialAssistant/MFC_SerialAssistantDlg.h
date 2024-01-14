@@ -90,4 +90,9 @@ public:
 	CProgressCtrl m_Progress_Com_ONOFF;
 	CProgressCtrl m_Progress_Save_ONOFF;
 	afx_msg void OnBnClickedBtSave();
+	afx_msg void OnBnClickedBtSelectSavepath();
+
+	CFile m_cJzFile;
+	CString m_JzFilePath;
+	bool m_JzFileSaveBT_Flag;
 };
